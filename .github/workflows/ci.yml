@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  unit_test:
+    name: Testes automatizados
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Rodar pytest
+        run: |
+          set -o pipefail
+          pytest -v 2>&1 | tee pytest.log
+      - name: Guardar o log dos testes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pytest-log
+          path: pytest.log
+
+  ai_debugger:
+    name: Diagnóstico com IA generativa
+    needs: unit_test
+    if: failure() && github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - uses: actions/download-artifact@v4
+        with:
+          name: pytest-log
+      - name: Diff do pull request
+        run: git diff origin/${{ github.base_ref }}...HEAD > pr.diff
+      - name: Analisar a falha com IA e comentar no PR
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_BASE_URL: ${{ vars.OPENAI_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta/openai/' }}
+          OPENAI_MODEL: ${{ vars.OPENAI_MODEL || 'gemini-flash-latest' }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: python genai_analyst.py --log pytest.log --diff pr.diff
