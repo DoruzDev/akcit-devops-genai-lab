@@ -1,7 +1,9 @@
 """Serviço de pedidos usado no miniprojeto de DevOps com IA generativa."""
 
-# Taxa administrativa somada a todo frete, em reais.
-TAXA_ADMINISTRATIVA = 5.50
+import os
+
+# Taxa administrativa somada a todo frete, em reais. Vem da configuração do ambiente.
+TAXA_ADMINISTRATIVA = float(os.getenv("TAXA_ADMINISTRATIVA", "5.50"))
 
 
 class OrderService:
