@@ -3,7 +3,7 @@
 import os
 
 # Taxa administrativa somada a todo frete, em reais. Vem da configuração do ambiente.
-TAXA_ADMINISTRATIVA = os.getenv("TAXA_ADMINISTRATIVA", "5.50")
+TAXA_ADMINISTRATIVA = float(os.getenv("TAXA_ADMINISTRATIVA", "5.50"))
 
 
 class OrderService:
